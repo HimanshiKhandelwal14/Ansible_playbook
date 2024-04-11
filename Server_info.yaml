@@ -1,0 +1,42 @@
+---
+- name: Get Server information
+  hosts: Red_hat_servers
+  gather_facts: yes  # This ensure Ansible collects facts about the remote system.
+  become: yes
+
+  tasks:
+    - name: Find file with max space utilization
+      shell: "du -h -d 1 /home/ec2-user | sort -rh | head -n 1"
+      register: max_space_file
+
+    - name: Display Max Space File
+      debug:
+        var: max_space_file.stdout_lines
+
+    - name: Get top 5 processes by cpu
+      shell: |
+        ps -eo pid,cmd,%cpu,%mem,time --sort=-%cpu | head -n 6
+      register: top_cpu_process
+
+    - name: show top CPU consuming processes
+      debug:
+        var: top_cpu_process.stdout_lines
+
+    - name: Get top 5 processes by memory_consuming
+      shell: |
+        ps -eo pid,cmd,%cpu,%mem,time --sort=-%mem | head -n 6
+      register: top_mem_process
+
+    - name: show top Memory consuming processes
+      debug:
+        var: top_mem_process.stdout_lines
+
+    - name: Check memory and CPU usage
+      shell: |
+        ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem,-%cpu | head
+      register: ps_output
+
+
+    - name: Print memory and CPU usage
+      debug:
+        var: ps_output.stdout_lines
