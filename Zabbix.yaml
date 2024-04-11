@@ -1,0 +1,86 @@
+---
+- name: Install and Configure Zabbix Agent
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install Zabbix repository for Red Hat
+      block:
+        - name: Install epel-release for Red Hat
+          yum:
+            name: epel-release
+            state: present
+      when: ansible_os_family == "RedHat"
+
+    - name: Install Zabbix repository for Ubuntu
+      block:
+        - name: Install software-properties-common for Ubuntu
+          apt:
+            name: software-properties-common
+            state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Add Zabbix repository for Red Hat
+      block:
+        - name: Add Zabbix repository for Red Hat
+          yum_repository:
+            name: zabbix
+            description: Zabbix Official Repository
+            baseurl: https://repo.zabbix.com/zabbix/5.0/rhel/{{ ansible_distribution_major_version }}/x86_64/
+            gpgcheck: yes
+            gpgkey: https://repo.zabbix.com/RPM-GPG-KEY-ZABBIX
+      when: ansible_os_family == "RedHat"
+
+    - name: Add Zabbix repository for Ubuntu
+      block:
+        - name: Add Zabbix repository for Ubuntu
+          apt_repository:
+            repo: 'deb https://repo.zabbix.com/zabbix/5.0/ubuntu/ focal main'
+            state: present
+            filename: zabbix
+            update_cache: yes
+          notify:
+            - refresh apt cache
+      when: ansible_os_family == "Debian"
+
+    - name: Install Zabbix Agent
+      block:
+        - name: Install Zabbix Agent
+          package:
+            name: zabbix-agent
+            state: present
+      become: true
+
+    - name: Start Zabbix Agent service
+      block:
+        - name: Start Zabbix Agent service
+          service:
+            name: zabbix-agent
+            state: started
+            enabled: yes
+
+    - name: Configure Zabbix Agent
+      block:
+        - name: Copy Zabbix Agent configuration file
+          template:
+            src: zabbix_agentd.conf.j2
+            dest: /etc/zabbix/zabbix_agentd.conf
+          notify:
+            - restart zabbix-agent
+
+    - name: Start Zabbix Agent service after configuration
+      block:
+        - name: Start Zabbix Agent service
+          service:
+            name: zabbix-agent
+            state: restarted
+
+  handlers:
+    - name: restart zabbix-agent
+      service:
+        name: zabbix-agent
+        state: restarted
+
+    - name: refresh apt cache
+      apt:
+        update_cache: yes
