@@ -1,0 +1,131 @@
+---
+- name: Get Server information
+  hosts: Red_hat_servers
+  gather_facts: yes  # This ensure Ansible collects facts about the remote system.
+  become: yes
+
+  tasks:
+    - name: Get Hostname Information
+      command: hostnamectl
+      register: hostnamectl_output # store the output of the hostnamectl command
+
+
+    - name: Display  information
+      debug:
+        var: hostnamectl_output.stdout_lines
+
+    - name: Get Free Memory
+      command: free -h
+      register: free_memory_output
+
+    - name: Display  information
+      debug:
+        var: free_memory_output.stdout_lines
+
+    - name: Run lscpu command
+      shell: lscpu | head -18
+      register: lscpu_output
+
+    - name: Display the first 18 lines of lscpu output
+      debug:
+        var: lscpu_output.stdout_lines[:18]
+
+    - name: Run lsblk command
+      shell: sudo lsblk | grep disk
+      register: lsblk_output
+
+    - name: Display lsblk output
+      debug:
+        var: lsblk_output.stdout_lines
+
+    - name: Get top 5 processes by cpu
+      shell: |
+        ps -eo pid,cmd,%cpu,%mem,time --sort=-%cpu | head -n 6
+      register: top_cpu_process
+
+    - name: show top CPU consuming processes
+      debug:
+        var: top_cpu_process.stdout_lines
+
+    - name: Run sudo yum repolist
+      command: sudo yum repolist
+      register: yum_repolist_output  # Store the command output in this variable
+
+    - name: Display yum repolist output
+      debug:
+        var: yum_repolist_output.stdout_lines
+
+    - name: Run sudo yum update info
+      command: sudo yum -y updateinfo
+      register: yum_updateinfo_output  # Store the command output in this variable
+
+    - name: Display yum update info output
+      debug:
+        var: yum_updateinfo_output.stdout_lines
+
+    - name: save the output
+      ansible.builtin.copy:
+        content: |
+
+          ############### hostnamectl_output ########################
+          {{hostnamectl_output.stdout}}
+
+          ################ free_memory_output ######################
+          {{ free_memory_output.stdout}}
+
+
+          ########### lscpu_output ###########################
+          {{lscpu_output.stdout}}
+
+
+          ############ lsblk_output  ###########################
+          {{ lsblk_output.stdout}}
+
+          ############# top_cpu_process ########################
+          {{ top_cpu_process.stdout}}
+
+          ########### Repolist Output: ####################
+          {{ yum_repolist_output.stdout}}
+
+          ########### Update Info: ####################
+          {{ yum_updateinfo_output.stdout}}
+
+        dest: "/home/ec2-user/output_file.log"
+
+    - name: copy file from remote to local
+      ansible.builtin.fetch:
+        src: "/home/ec2-user/output_file.log"
+        dest: "/home/ubuntu/output.log"
+        flat: yes
+
+
+    - name: Save the output
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: |
+
+          ############### hostnamectl_output ########################
+          "{{hostnamectl_output.stdout}}"
+
+
+          ################ free_memory_output ######################
+          "{{ free_memory_output.stdout}}"
+
+
+          ########### lscpu_output ###########################
+          "{{lscpu_output.stdout[:18]}}"
+
+
+          ############ lsblk_output  ###########################
+          "{{ lsblk_output.stdout}}"
+
+          ############# top_cpu_process ########################
+          {{ top_cpu_process.stdout}}
+
+           ########### Repolist Output: ####################
+          {{ yum_repolist_output.stdout}}
+
+          ########### Update Info: ####################
+          {{ yum_updateinfo_output.stdout}}
+
+        dest: "/home/ubuntu/output_file.log"
