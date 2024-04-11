@@ -1,0 +1,39 @@
+---
+
+- name: Change Red Hat Subscription to Standard
+  hosts: Red_hat_servers
+  become: true
+  tasks:
+
+    - name: Unsubscribe from Premium SKU
+      command:  sudo subscription-manager remove --all
+      ignore_errors: yes
+
+    - name: Unsubscribe from Premium SKU
+      shell: sudo subscription-manager unregister
+      ignore_errors: yes
+
+    - name: Unsubscribe from Premium SKU
+      command:  sudo subscription-manager clean
+      ignore_errors: yes
+
+    - name: Re-register the system
+      shell: sudo subscription-manager register --username=himanshikhandelwal14@gmail.com --password=Himanshikhandelwal123@
+      ignore_errors: yes
+
+    - name: Re-register the system
+      command: sudo subscription-manager refresh
+      ignore_errors: yes
+
+    - name: Subscribe to Standard SKU
+      command: sudo subscription-manager attach --pool=2c94dfc48bd4a8f6018c2541d7063d91
+      ignore_errors: yes
+
+    - name: Subscribe to Standard
+      command: sudo subscription-manager repos --disable="*"
+      ignore_errors: yes
+
+    - name: Subscribe to Standard
+      command: sudo subscription-manager refresh
+      ignore_errors: yes
+##Red_hat_servers.yaml
