@@ -1,0 +1,14 @@
+---
+- name: Get Server information
+  hosts: Red_hat_servers
+  gather_facts: yes  # This ensure Ansible collects facts about the remote system.
+  become: yes
+  tasks:
+    - name: Check for failed login attempts
+      shell: grep " Failed password" /var/log/
+      register: failed_logins
+      ignore_errors: yes
+
+    - name: Print the number of failed login attempts
+      debug:
+        var: failed_logins.stdout
