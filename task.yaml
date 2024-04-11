@@ -1,0 +1,62 @@
+---
+- name: Get Server information
+  hosts: Red_hat_servers
+  gather_facts: yes  # This ensure Ansible collects facts about the remote system.
+  become: yes
+  vars:
+    path_to_directory: "/home/ec2-user/"
+
+  tasks:
+    - name: Find file with max space utilization
+      command: find "{{ path_to_directory }}" -type f -exec du -h {} + | sort -rh | head -n 1
+      args:
+        warn: yes
+      register: max_space_file
+      ignore_errors: yes
+
+    - name: Display Max Space File
+      debug:
+        var: max_space_file.stdout_lines
+      when: max_space_file.stdout_lines is not empty
+
+    - name: Get top 5 processes by cpu
+      shell: |
+        ps -eo pid,cmd,%cpu,%mem,time --sort=-%cpu | head -n 6
+      register: top_cpu_process
+
+    - name: show top CPU consuming processes
+      debug:
+        var: top_cpu_process.stdout_lines
+
+    - name: Get top 5 processes by memory_consuming
+      shell: |
+        ps -eo pid,cmd,%cpu,%mem,time --sort=-%mem | head -n 6
+      register: top_mem_process
+
+    - name: show top Memory consuming processes
+      debug:
+        var: top_mem_process.stdout_lines
+
+    - name: Check failed login attempts
+      shell: "lastb"
+      args:
+        warn: yes
+      register: lastb_output
+      ignore_errors: yes
+
+    - name: Print failed login attempts
+      debug:
+        var: lastb_output.stdout
+      when: lastb_output.stdout != ""
+
+    - name: Check memory and CPU usage
+      shell: "ps -eo pid,ppid,cmd,%mem,%cpu --sort=-%mem,-%cpu | head"
+      args:
+        warn: yes
+      register: ps_output
+      ignore_errors: yes
+
+    - name: Print memory and CPU usage
+      debug:
+        var: ps_output.stdout
+      when: ps_output.stdout != ""
